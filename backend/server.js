@@ -19,12 +19,11 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 // MySQL Connection Pool (recommended for production)
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost', // Defaults to 'localhost' if not set in .env
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306, // Parse port as integer
-
+  host: process.env.DB_HOST || process.env.MYSQLHOST || process.env.RAILWAY_PRIVATE_DOMAIN,
+  port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
+  user: process.env.DB_USER || process.env.MYSQLUSER || 'root',
+  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD,
+  database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'railway'
 });
 
 // Test MySQL connection
