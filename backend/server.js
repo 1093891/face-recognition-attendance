@@ -1,7 +1,7 @@
 // backend/server.js
 
 const express = require('express');
-const mysql = require('mysql2/promise'); // Using promise-based API for async/await
+const { Pool } = require('pg'); // Replace mysql2 with pg
 const path = require('path');
 const cors = require('cors'); // Required for cross-origin requests from frontend
 require('dotenv').config(); // Load environment variables from .env file
@@ -17,14 +17,25 @@ app.use(express.json({ limit: '50mb' })); // To parse JSON request bodies, incre
 // This allows the Node.js server to serve your index.html, app.js, style.css, and models
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// MySQL Connection Pool (recommended for production)
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || process.env.MYSQLHOST || process.env.RAILWAY_PRIVATE_DOMAIN,
-  port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
-  user: process.env.DB_USER || process.env.MYSQLUSER || 'root',
-  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD,
-  database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'railway'
+// progressSQL Connection Pool (recommended for production)
+const { Pool } = require('pg'); // Replace mysql2 with pg
+require('dotenv').config();
+
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // Required for Render
 });
+
+// Test connection
+pool.connect()
+  .then(client => {
+    console.log('Connected to PostgreSQL database!');
+    client.release();
+  })
+  .catch(err => {
+    console.error('PostgreSQL connection error:', err.message);
+  });
 
 // Test MySQL connection
 pool.getConnection()
@@ -56,10 +67,14 @@ app.post('/api/register-face', async (req, res) => {
 
         // SQL query to insert or update a registered face
         // ON DUPLICATE KEY UPDATE ensures that if a name already exists, its descriptor is updated
-        const [rows] = await pool.execute(
-            'INSERT INTO registered_faces (name, descriptor, timestamp) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE descriptor = ?, timestamp = NOW()',
-            [name, descriptorJsonString, descriptorJsonString] // Use the JSON string for both insert and update
-        );
+      // In /api/register-face progress edition
+    const [rows] = await pool.query(
+      `INSERT INTO registered_faces (name, descriptor, timestamp) 
+       VALUES ($1, $2, NOW()) 
+       ON CONFLICT (name) 
+       DO UPDATE SET descriptor = $2, timestamp = NOW()`,
+      [name, descriptorJsonString]
+    );
         console.log(`Register Face: Data inserted/updated for "${name}". Affected rows: ${rows.affectedRows}`);
         res.status(201).json({ message: 'Face registered successfully!', id: rows.insertId });
     } catch (error) {
@@ -72,7 +87,7 @@ app.post('/api/register-face', async (req, res) => {
 app.get('/api/registered-faces', async (req, res) => {
     try {
         console.log('Fetching all registered faces...');
-        const [rows] = await pool.execute('SELECT name, descriptor FROM registered_faces');
+       const { rows } = await pool.query('SELECT name, descriptor FROM registered_faces'); // progress edition
         console.log(`Fetched ${rows.length} rows from registered_faces.`);
 
         const faces = rows.map(row => {
@@ -124,7 +139,7 @@ app.get('/api/registered-faces', async (req, res) => {
 app.delete('/api/registered-faces/:name', async (req, res) => {
     const { name } = req.params; // Get the name from the URL parameter
     try {
-        const [result] = await pool.execute('DELETE FROM registered_faces WHERE name = ?', [name]);
+       const { rowCount } = await pool.query('DELETE FROM registered_faces WHERE name = $1', [name]);// progress edition
         if (result.affectedRows === 0) {
             console.warn(`Delete Face: Face with name "${name}" not found.`);
             return res.status(404).json({ error: 'Face not found.' });
@@ -147,11 +162,11 @@ app.post('/api/mark-attendance', async (req, res) => {
     }
 
     try {
-        // Insert a new attendance record
-        const [rows] = await pool.execute(
-            'INSERT INTO attendance_records (name, timestamp, distance) VALUES (?, NOW(), ?)',
-            [name, distance]
-        );
+            // Updated PostgreSQL version
+      const { rows } = await pool.query(
+        'INSERT INTO attendance_records (name, timestamp, distance) VALUES ($1, NOW(), $2) RETURNING *',
+        [name, distance]
+      );
         console.log(`Mark Attendance: Record added for "${name}" with distance ${distance}.`);
         res.status(201).json({ message: 'Attendance marked successfully!', id: rows.insertId });
     } catch (error) {
@@ -167,7 +182,10 @@ app.get('/api/attendance-log', async (req, res) => {
         // Fetch latest 10 attendance records, ordered by timestamp descending
         // For the report feature, the frontend will filter by date/time.
         // If you need to optimize for very large datasets, you'd add WHERE clauses here.
-        const [rows] = await pool.execute('SELECT name, timestamp, distance FROM attendance_records ORDER BY timestamp DESC'); // Removed LIMIT 10 for full report data
+               // Updated PostgreSQL version
+        const { rows } = await pool.query(
+          'SELECT name, timestamp, distance FROM attendance_records ORDER BY timestamp DESC'
+        );
         console.log(`Fetched ${rows.length} attendance records.`);
         res.status(200).json(rows);
     } catch (error) {
