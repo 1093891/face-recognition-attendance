@@ -26,7 +26,7 @@ let attendanceReportTableContainer;
 
 
 // Backend API base URL
-const API_BASE_URL = 'https://face-recognition-backend-final.onrender.com/';
+const API_BASE_URL = 'https://face-recognition-backend-final.onrender.com';
 
 let labeledFaceDescriptors = []; // Array to store all registered LabeledFaceDescriptors
 let detectionInterval; // To hold the interval ID for face detection
@@ -117,7 +117,7 @@ async function registerFace() {
         }
 
         // Send the descriptor to the backend
-        const response = await fetch(`${API_BASE_URL}/register-face`, {
+        const response = await fetch(`${API_BASE_URL}/api/register-face`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -186,7 +186,7 @@ async function markAttendance() {
 // --- NEW FUNCTION for Automatic Attendance Marking ---
 async function markAttendanceAutomatic(name, distance, isManual = false) {
     try {
-        const response = await fetch(`${API_BASE_URL}/mark-attendance`, {
+        const response = await fetch(`${API_BASE_URL}/api/mark-attendance`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -296,7 +296,7 @@ function startDetectionLoopInternal(displaySize) {
 // --- Backend Data Fetching and UI Rendering ---
 async function fetchRegisteredFaces() {
     try {
-        const response = await fetch(`${API_BASE_URL}/registered-faces`);
+        const response = await fetch(`${API_BASE_URL}/api/registered-faces`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -337,7 +337,7 @@ async function fetchRegisteredFaces() {
 
 async function fetchAttendanceLog() {
     try {
-        const response = await fetch(`${API_BASE_URL}/attendance-log`);
+        const response = await fetch(`${API_BASE_URL}/api/attendance-log`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -405,7 +405,7 @@ async function generateAttendanceReport() {
         // Fetch ALL attendance records (or records within a broader range if needed for large datasets)
         // For simplicity, we'll fetch all and filter client-side.
         // In a very large system, you'd add date range filters to the backend API.
-        const response = await fetch(`${API_BASE_URL}/attendance-log`); // Fetch all records
+        const response = await fetch(`${API_BASE_URL}/api/attendance-log`); // Fetch all records
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -556,7 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (confirm(`Are you sure you want to delete ${nameToDelete}'s registered face?`)) {
                     showLoading(`Deleting ${nameToDelete}...`);
                     try {
-                        const response = await fetch(`${API_BASE_URL}/registered-faces/${nameToDelete}`, {
+                        const response = await fetch(`${API_BASE_URL}/api/registered-faces/${nameToDelete}`, {
                             method: 'DELETE'
                         });
                         const result = await response.json();
