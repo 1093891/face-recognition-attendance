@@ -26,7 +26,7 @@ let attendanceReportTableContainer;
 
 
 // Backend API base URL
-const API_BASE_URL = 'https://your-backend-service-name.onrender.com';
+const API_BASE_URL = 'https://face-recognition-backend-final.onrender.com/';
 
 let labeledFaceDescriptors = []; // Array to store all registered LabeledFaceDescriptors
 let detectionInterval; // To hold the interval ID for face detection
