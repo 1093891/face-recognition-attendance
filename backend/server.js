@@ -1,4 +1,3 @@
-// backend/server.js
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
@@ -13,46 +12,42 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// PostgreSQL Pool with SSL for Render
+// PostgreSQL Configuration for Render
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:  { rejectUnauthorized: false }
+  ssl: {
+    rejectUnauthorized: false // Required for Render's PostgreSQL
+  }
 });
 
 // ======================
-// AUTO-TABLE CREATION
+// DATABASE INITIALIZATION
 // ======================
 async function initializeDatabase() {
+  const client = await pool.connect();
   try {
-    // Create tables if they don't exist
-    await pool.query(`
+    // Create tables with proper constraints
+    await client.query(`
       CREATE TABLE IF NOT EXISTS registered_faces (
         name VARCHAR(255) PRIMARY KEY,
         descriptor JSONB NOT NULL,
         timestamp TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
+      )`);
 
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS attendance_records (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         timestamp TIMESTAMPTZ DEFAULT NOW(),
-        distance FLOAT,
-        CONSTRAINT fk_name FOREIGN KEY(name) REFERENCES registered_faces(name) ON DELETE CASCADE
-      )
-    `);
-
-    // Add indexes for performance
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_attendance_timestamp 
-      ON attendance_records (timestamp DESC)
-    `);
+        distance FLOAT
+      )`);
 
     console.log('✅ Database tables initialized');
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
-    process.exit(1); // Exit if tables can't be created
+    throw error; // Crash the app if tables can't be created
+  } finally {
+    client.release();
   }
 }
 
@@ -77,8 +72,8 @@ app.post('/api/register-face', async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (error) {
-    console.error('Error registering face:', error);
-    res.status(500).json({ error: 'Database operation failed' });
+    console.error('Database error:', error);
+    res.status(500).json({ error: 'Failed to register face' });
   }
 });
 
@@ -136,23 +131,25 @@ app.get('/api/attendance-log', async (req, res) => {
 // START SERVER
 // ======================
 async function startServer() {
-  await initializeDatabase(); // Ensure tables exist
-  
-  app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
-    console.log(`🔗 PostgreSQL connected to: ${process.env.DATABASE_URL.split('@')[1]}`);
-  });
+  try {
+    await initializeDatabase();
+    
+    app.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+      console.log(`🔗 PostgreSQL connected via SSL`);
+    });
+  } catch (error) {
+    console.error('🔥 Fatal startup error:', error);
+    process.exit(1);
+  }
 }
 
-startServer().catch(err => {
-  console.error('🔥 Failed to start server:', err);
-  process.exit(1);
-});
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   pool.end(() => {
-    console.log('🛑 Pool closed');
+    console.log('🛑 Database connection pool closed');
     process.exit(0);
   });
 });
