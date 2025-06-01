@@ -1,0 +1,14 @@
+# Node.js
+node_modules/
+.env
+npm-debug.log
+*.log
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# MySQL specific (if any local config files)
+*.sql.local
