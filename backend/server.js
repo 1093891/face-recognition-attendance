@@ -7,14 +7,10 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-const corsOptions = {
-  origin: [
-    'http://localhost:3000', // For local development
-    'https://face-recognition-backend-final.onrender.com'
-  ],
-  credentials: true
-};
-app.use(cors(corsOptions));
+
+app.use(cors({
+  origin: '*' // Allows ALL websites to connect
+}));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
