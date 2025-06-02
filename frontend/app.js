@@ -26,13 +26,14 @@ let attendanceReportTableContainer;
 
 
 // Backend API base URL
-const API_BASE_URL = 'https://face-recognition-backend-final.onrender.com';
+const API_BASE_URL = 'https://app-f25224d9-3d44-4835-b3b8-feba71473b84.cleverapps.io'; // Ensure this matches your deployed backend URL
 
 let labeledFaceDescriptors = []; // Array to store all registered LabeledFaceDescriptors
 let detectionInterval; // To hold the interval ID for face detection
 
 // --- Auto-marking specific variables ---
-const DEFAULT_COOLDOWN_INTERVAL = 10000; // Default 10 seconds in milliseconds
+// UPDATED: Default cooldown interval to 1 minute (60 seconds * 1000 ms/sec)
+const DEFAULT_COOLDOWN_INTERVAL = 60 * 1000; // 1 minute in milliseconds
 let currentCooldownInterval = DEFAULT_COOLDOWN_INTERVAL; // Will hold the active cooldown
 const recentlyMarked = {}; // Stores { 'PersonName': lastMarkedTimestamp } to prevent rapid re-marking
 
@@ -367,13 +368,15 @@ async function fetchAttendanceLog() {
 
 // --- NEW FUNCTION: Set Attendance Interval ---
 function setAttendanceInterval() {
-    const intervalSeconds = parseInt(timeRangeInput.value);
-    if (isNaN(intervalSeconds) || intervalSeconds <= 0) {
-        showMessage("Please enter a valid positive number for the time range (in seconds).", "error");
+    // UPDATED: Read value as minutes
+    const intervalMinutes = parseInt(timeRangeInput.value);
+    if (isNaN(intervalMinutes) || intervalMinutes <= 0) {
+        showMessage("Please enter a valid positive number for the time range (in minutes).", "error");
         return;
     }
-    currentCooldownInterval = intervalSeconds * 1000; // Convert seconds to milliseconds
-    showMessage(`Automatic marking interval set to ${intervalSeconds} seconds.`, "info");
+    // UPDATED: Convert minutes to milliseconds
+    currentCooldownInterval = intervalMinutes * 60 * 1000; // Convert minutes to milliseconds
+    showMessage(`Automatic marking interval set to ${intervalMinutes} minutes.`, "info");
     // Restart the detection loop to apply the new interval immediately
     startDetectionLoop();
 }
