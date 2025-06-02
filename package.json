@@ -1,0 +1,27 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+   "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo 'Building the project...'",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prettier-check": "prettier --check .",
+    "prettier-fix": "prettier --write .",
+    "postinstall": "npm run render-build",
+  "render-build": "npm install && echo 'Build complete'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+     "pg": "^8.11.3",
+    "cors": "^2.8.5" 
+  }
+}
